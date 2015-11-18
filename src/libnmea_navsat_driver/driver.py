@@ -78,72 +78,18 @@ class RosNMEADriver(object):
         else:
             current_time_ref.source = frame_id
 
-        if not self.use_RMC and 'GGA' in parsed_sentence:
-            data = parsed_sentence['GGA']
-            gps_qual = data['fix_type']
-            if gps_qual == 0:
-                current_fix.status.status = NavSatStatus.STATUS_NO_FIX
-            elif gps_qual == 1:
-                current_fix.status.status = NavSatStatus.STATUS_FIX
-            elif gps_qual == 2:
-                current_fix.status.status = NavSatStatus.STATUS_SBAS_FIX
-            elif gps_qual in (4, 5):
-                current_fix.status.status = NavSatStatus.STATUS_GBAS_FIX
-            else:
-                current_fix.status.status = NavSatStatus.STATUS_NO_FIX
-
-            current_fix.status.service = NavSatStatus.SERVICE_GPS
-
-            current_fix.header.stamp = current_time
-
-            latitude = data['latitude']
-            if data['latitude_direction'] == 'S':
-                latitude = -latitude
-            current_fix.latitude = latitude
-
-            longitude = data['longitude']
-            if data['longitude_direction'] == 'W':
-                longitude = -longitude
-            current_fix.longitude = longitude
-
-            hdop = data['hdop']
-            current_fix.position_covariance[0] = hdop ** 2
-            current_fix.position_covariance[4] = hdop ** 2
-            current_fix.position_covariance[8] = (2 * hdop) ** 2  # FIXME
-            current_fix.position_covariance_type = \
-                NavSatFix.COVARIANCE_TYPE_APPROXIMATED
-
-            # Altitude is above ellipsoid, so adjust for mean-sea-level
-            altitude = data['altitude'] + data['mean_sea_level']
-            current_fix.altitude = altitude
-
-            self.fix_pub.publish(current_fix)
-
-            if not math.isnan(data['utc_time']):
-                current_time_ref.time_ref = rospy.Time.from_sec(data['utc_time'])
-                self.time_ref_pub.publish(current_time_ref)
-
-        elif 'RMC' in parsed_sentence:
-            data = parsed_sentence['RMC']
+          if 'B' in parsed_sentence:
+            data = parsed_sentence['B']
 
             # Only publish a fix from RMC if the use_RMC flag is set.
-            if self.use_RMC:
-                if data['fix_valid']:
-                    current_fix.status.status = NavSatStatus.STATUS_FIX
-                else:
-                    current_fix.status.status = NavSatStatus.STATUS_NO_FIX
+            if True:
 
+                current_fix.status.status = NavSatStatus.STATUS_FIX
                 current_fix.status.service = NavSatStatus.SERVICE_GPS
 
-                latitude = data['latitude']
-                if data['latitude_direction'] == 'S':
-                    latitude = -latitude
-                current_fix.latitude = latitude
+                current_fix.latitude = data['latitude']
 
-                longitude = data['longitude']
-                if data['longitude_direction'] == 'W':
-                    longitude = -longitude
-                current_fix.longitude = longitude
+                current_fix.longitude = data['longitude']
 
                 current_fix.altitude = float('NaN')
                 current_fix.position_covariance_type = \
@@ -156,7 +102,7 @@ class RosNMEADriver(object):
                     self.time_ref_pub.publish(current_time_ref)
 
             # Publish velocity from RMC regardless, since GGA doesn't provide it.
-            if data['fix_valid']:
+            if True:
                 current_vel = TwistStamped()
                 current_vel.header.stamp = current_time
                 current_vel.header.frame_id = frame_id

@@ -53,11 +53,15 @@ def safe_int(field):
 
 
 def convert_latitude(field):
+    if field[0] == '-':
+        return safe_float(field[0:3]) - safe_float(field[3:]) / 60.0
     return safe_float(field[0:2]) + safe_float(field[2:]) / 60.0
 
 
 def convert_longitude(field):
-    return safe_float(field[0:3]) + safe_float(field[3:]) / 60.0
+    if field[0] == '-':
+        return safe_float(field[0:3]) - safe_float(field[3:]) / 60.0
+    return safe_float(field[:2]) + safe_float(field[2:]) / 60.0
 
 
 def convert_time(nmea_utc):
@@ -94,6 +98,7 @@ def convert_knots_to_mps(knots):
 # Need this wrapper because math.radians doesn't auto convert inputs
 def convert_deg_to_rads(degs):
     return math.radians(safe_float(degs))
+# need to adjust for vid
 
 """Format for this is a sentence identifier (e.g. "GGA") as the key, with a
 tuple of tuples where each tuple is a field name, conversion function and index
@@ -120,20 +125,27 @@ parse_maps = {
         ("longitude_direction", str, 6),
         ("speed", convert_knots_to_mps, 7),
         ("true_course", convert_deg_to_rads, 8),
+        ],
+    "B": [
+        ("latitude", convert_latitude, 1),
+        ("longitude", convert_longitude, 2),
+        ("speed", safe_float, 3),
+        ("true_course", safe_int, 4),
+        ("utc_time", safe_float, 5),
         ]
     }
 
 
 def parse_nmea_sentence(nmea_sentence):
     # Check for a valid nmea sentence
-    if not re.match('^\$GP.*\*[0-9A-Fa-f]{2}$', nmea_sentence):
-        logger.debug("Regex didn't match, sentence not valid NMEA? Sentence was: %s"
-                     % repr(nmea_sentence))
-        return False
+    #if not re.match('^\$GP.*\*[0-9A-Fa-f]{2}$', nmea_sentence):
+    #    logger.debug("Regex didn't match, sentence not valid NMEA? Sentence was: %s"
+    #                 % repr(nmea_sentence))
+    #    return False
     fields = [field.strip(',') for field in nmea_sentence.split(',')]
 
     # Ignore the $ and talker ID portions (e.g. GP)
-    sentence_type = fields[0][3:]
+    sentence_type = fields[0][1:]
 
     if not sentence_type in parse_maps:
         logger.debug("Sentence type %s not in parse map, ignoring."
